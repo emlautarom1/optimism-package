@@ -82,7 +82,9 @@
             foundry
             tx-fuzz
             kurtosis-test
+            pkgs.python3
             pkgs.shellcheck
+            pkgs.watchexec
           ];
         };
       }
