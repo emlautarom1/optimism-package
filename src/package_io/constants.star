@@ -19,6 +19,7 @@ EL_TYPE = struct(
 CL_TYPE = struct(
     op_node="op-node",
     hildr="hildr",
+    null_node="null-node",
 )
 
 CLIENT_TYPES = struct(

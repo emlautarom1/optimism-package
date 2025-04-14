@@ -18,7 +18,7 @@ op_nethermind = import_module("./el/op-nethermind/op_nethermind_launcher.star")
 op_besu = import_module("./el/op-besu/op_besu_launcher.star")
 # CL
 op_node = import_module("./cl/op-node/op_node_launcher.star")
-neth_node = import_module("./cl/neth-node/neth_node_launcher.star")
+null_node = import_module("./cl/null-node/null_node_launcher.star")
 hildr = import_module("./cl/hildr/hildr_launcher.star")
 
 # MEV
@@ -123,11 +123,11 @@ def launch(
             ),
             "launch_method": op_node.launch,
         },
-        "neth-node": {
-            "launcher": neth_node.new_neth_node_launcher(
+        "null-node": {
+            "launcher": null_node.new_null_node_launcher(
                 deployment_output, jwt_file, network_params
             ),
-            "launch_method": neth_node.launch,
+            "launch_method": null_node.launch,
         },
         "hildr": {
             "launcher": hildr.new_hildr_launcher(
