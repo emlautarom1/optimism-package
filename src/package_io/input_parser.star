@@ -16,6 +16,7 @@ DEFAULT_EL_IMAGES = {
 DEFAULT_CL_IMAGES = {
     "op-node": "us-docker.pkg.dev/oplabs-tools-artifacts/images/op-node:develop",
     "hildr": "ghcr.io/optimism-java/hildr:latest",
+    "null-node": "null-node:latest",
 }
 
 DEFAULT_BATCHER_IMAGES = {
