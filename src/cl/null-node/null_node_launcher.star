@@ -40,59 +40,17 @@ def launch(
     launcher,
     service_name,
     participant,
-    global_log_level,
-    persistent,
+    __global_log_level, # ignored
+    __persistent, # ignored
     tolerations,
     node_selectors,
     el_context,
-    existing_cl_clients,
-    l1_config_env_vars,
-    observability_helper,
-    interop_params,
-    da_server_context,
-):
-    config = get_beacon_config(
-        plan,
-        launcher,
-        service_name,
-        participant,
-        persistent,
-        tolerations,
-        node_selectors,
-        el_context,
-        existing_cl_clients,
-        l1_config_env_vars,
-        observability_helper,
-        da_server_context,
-    )
-
-    service = plan.add_service(service_name, config)
-    service_url = util.make_service_http_url(service)
-
-    return ethereum_package_cl_context.new_cl_context(
-        client_name=constants.CL_TYPE.null_node,
-        enr="",
-        ip_addr=service.ip_address,
-        http_port=util.get_service_http_port_num(service),
-        beacon_http_url=service_url,
-        cl_nodes_metrics_info=[],
-        beacon_service_name=service_name,
-    )
-
-
-def get_beacon_config(
-    plan,
-    launcher,
-    service_name,
-    participant,
-    persistent,
-    tolerations,
-    node_selectors,
-    el_context,
-    existing_cl_clients,
-    l1_config_env_vars,
-    observability_helper,
-    da_server_context,
+    __existing_cl_clients, # ignored
+    __l1_config_env_vars, # ignored
+    __sequencer_enabled, # ignored
+    __servability_helper, # ignored
+    __interop_params, # ignored
+    __da_server_context, # ignored
 ):
     cmd = ["dotnet", "Nethermind.Consensus.NullClient.dll"]
 
@@ -134,7 +92,20 @@ def get_beacon_config(
     if participant.cl_max_mem > 0:
         config_args["max_memory"] = participant.cl_max_mem
 
-    return ServiceConfig(**config_args)
+    config = ServiceConfig(**config_args)
+
+    service = plan.add_service(service_name, config)
+    service_url = util.make_service_http_url(service)
+
+    return ethereum_package_cl_context.new_cl_context(
+        client_name=constants.CL_TYPE.null_node,
+        enr="",
+        ip_addr=service.ip_address,
+        http_port=util.get_service_http_port_num(service),
+        beacon_http_url=service_url,
+        cl_nodes_metrics_info=[],
+        beacon_service_name=service_name,
+    )
 
 
 def new_null_node_launcher(deployment_output, jwt_file, network_params):
