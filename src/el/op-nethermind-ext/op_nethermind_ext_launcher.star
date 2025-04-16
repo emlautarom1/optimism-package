@@ -9,35 +9,38 @@ ethereum_package_el_admin_node_info = import_module(
     "github.com/ethpandaops/ethereum-package/src/el/el_admin_node_info.star"
 )
 
-ethereum_package_node_metrics = import_module(
+ethereum_package_el_node_metrics = import_module(
     "github.com/ethpandaops/ethereum-package/src/node_metrics_info.star"
-)
-ethereum_package_constants = import_module(
-    "github.com/ethpandaops/ethereum-package/src/package_io/constants.star"
 )
 
 ethereum_package_input_parser = import_module(
     "github.com/ethpandaops/ethereum-package/src/package_io/input_parser.star"
 )
 
+ethereum_package_constants = import_module(
+    "github.com/ethpandaops/ethereum-package/src/package_io/constants.star"
+)
+
 constants = import_module("../../package_io/constants.star")
 util = import_module("../../util.star")
 observability = import_module("../../observability/observability.star")
 
+# Execution ports
 RPC_PORT_NUM = 8545
 WS_PORT_NUM = 8546
 DISCOVERY_PORT_NUM = 30303
-ENGINE_RPC_PORT_NUM = 9551
+ENGINE_RPC_PORT_NUM = 8551
+
+# Beacon Ports
+BEACON_DISCOVERY_PORT_NUM = 9003
+BEACON_HTTP_PORT_NUM = 8547
 
 # The min/max CPU/memory that the execution node can use
-EXECUTION_MIN_CPU = 100
-EXECUTION_MIN_MEMORY = 256
-
-# Paths
-METRICS_PATH = "/metrics"
+EXECUTION_MIN_CPU = 300
+EXECUTION_MIN_MEMORY = 512
 
 # The dirpath of the execution data directory on the client container
-EXECUTION_DATA_DIRPATH_ON_CLIENT_CONTAINER = "/data/op-reth/execution-data"
+EXECUTION_DATA_DIRPATH_ON_CLIENT_CONTAINER = "/data/nethermind/execution-data"
 
 
 def get_used_ports(discovery_port=DISCOVERY_PORT_NUM):
@@ -57,18 +60,19 @@ def get_used_ports(discovery_port=DISCOVERY_PORT_NUM):
             discovery_port, ethereum_package_shared_utils.UDP_PROTOCOL
         ),
         constants.ENGINE_RPC_PORT_ID: ethereum_package_shared_utils.new_port_spec(
-            ENGINE_RPC_PORT_NUM, ethereum_package_shared_utils.TCP_PROTOCOL
+            ENGINE_RPC_PORT_NUM,
+            ethereum_package_shared_utils.TCP_PROTOCOL,
         ),
     }
     return used_ports
 
 
 VERBOSITY_LEVELS = {
-    ethereum_package_constants.GLOBAL_LOG_LEVEL.error: "v",
-    ethereum_package_constants.GLOBAL_LOG_LEVEL.warn: "vv",
-    ethereum_package_constants.GLOBAL_LOG_LEVEL.info: "vvv",
-    ethereum_package_constants.GLOBAL_LOG_LEVEL.debug: "vvvv",
-    ethereum_package_constants.GLOBAL_LOG_LEVEL.trace: "vvvvv",
+    ethereum_package_constants.GLOBAL_LOG_LEVEL.error: "1",
+    ethereum_package_constants.GLOBAL_LOG_LEVEL.warn: "2",
+    ethereum_package_constants.GLOBAL_LOG_LEVEL.info: "3",
+    ethereum_package_constants.GLOBAL_LOG_LEVEL.debug: "4",
+    ethereum_package_constants.GLOBAL_LOG_LEVEL.trace: "5",
 }
 
 
@@ -108,27 +112,28 @@ def launch(
         sequencer_enabled,
         sequencer_context,
         observability_helper,
+        l1_config_env_vars
     )
 
     service = plan.add_service(service_name, config)
     http_url = util.make_service_http_url(service, constants.RPC_PORT_ID)
+    ws_url = util.make_service_ws_url(service)
 
     enode = ethereum_package_el_admin_node_info.get_enode_for_node(
         plan, service_name, constants.RPC_PORT_ID
     )
 
-    metrics_info = observability.new_metrics_info(
-        observability_helper, service, METRICS_PATH
-    )
+    metrics_info = observability.new_metrics_info(observability_helper, service)
 
     return ethereum_package_el_context.new_el_context(
-        client_name="reth",
+        client_name="op-nethermind-ext",
         enode=enode,
         ip_addr=service.ip_address,
         rpc_port_num=RPC_PORT_NUM,
         ws_port_num=WS_PORT_NUM,
         engine_rpc_port_num=ENGINE_RPC_PORT_NUM,
         rpc_http_url=http_url,
+        ws_url=ws_url,
         service_name=service_name,
         el_metrics_info=[metrics_info],
     )
@@ -148,39 +153,32 @@ def get_config(
     sequencer_enabled,
     sequencer_context,
     observability_helper,
+    l1_config_env_vars
 ):
     discovery_port = DISCOVERY_PORT_NUM
     ports = dict(get_used_ports(discovery_port))
 
     cmd = [
-        "node",
-        "-{0}".format(log_level),
+        "--log=" + log_level,
         "--datadir=" + EXECUTION_DATA_DIRPATH_ON_CLIENT_CONTAINER,
-        "--chain={0}".format(
-            launcher.network
-            if launcher.network in ethereum_package_constants.PUBLIC_NETWORKS
-            else ethereum_package_constants.GENESIS_CONFIG_MOUNT_PATH_ON_CONTAINER
-            + "/genesis-{0}.json".format(launcher.network_id)
-        ),
-        "--http",
-        "--http.port={0}".format(RPC_PORT_NUM),
-        "--http.addr=0.0.0.0",
-        "--http.corsdomain=*",
-        # WARNING: The admin info endpoint is enabled so that we can easily get ENR/enode, which means
-        #  that users should NOT store private information in these Kurtosis nodes!
-        "--http.api=admin,net,eth,web3,debug,trace",
-        "--ws",
-        "--ws.addr=0.0.0.0",
-        "--ws.port={0}".format(WS_PORT_NUM),
-        "--ws.api=net,eth",
-        "--ws.origins=*",
-        "--nat=extip:" + ethereum_package_constants.PRIVATE_IP_ADDRESS_PLACEHOLDER,
-        "--authrpc.port={0}".format(ENGINE_RPC_PORT_NUM),
-        "--authrpc.jwtsecret=" + ethereum_package_constants.JWT_MOUNT_PATH_ON_CONTAINER,
-        "--authrpc.addr=0.0.0.0",
-        "--discovery.port={0}".format(discovery_port),
-        "--port={0}".format(discovery_port),
-        "--rpc.eth-proof-window=302400",
+        "--Init.WebSocketsEnabled=true",
+        "--JsonRpc.Enabled=true",
+        "--JsonRpc.EnabledModules=net,eth,consensus,subscribe,web3,admin,miner",
+        "--JsonRpc.Host=0.0.0.0",
+        "--JsonRpc.Port={0}".format(RPC_PORT_NUM),
+        "--JsonRpc.WebSocketsPort={0}".format(WS_PORT_NUM),
+        "--JsonRpc.EngineHost=0.0.0.0",
+        "--JsonRpc.EnginePort={0}".format(ENGINE_RPC_PORT_NUM),
+        "--Network.ExternalIp=" + ethereum_package_constants.PRIVATE_IP_ADDRESS_PLACEHOLDER,
+        "--Network.DiscoveryPort={0}".format(discovery_port),
+        "--Network.P2PPort={0}".format(discovery_port),
+        "--JsonRpc.JwtSecretFile=" + ethereum_package_constants.JWT_MOUNT_PATH_ON_CONTAINER,
+        # CL Configs
+        # "--CL.Enabled=true",
+        # "--CL.P2PHost=0.0.0.0",
+        # "--CL.P2PPort={0}".format(BEACON_DISCOVERY_PORT_NUM),
+        # "--CL.L1BeaconApiEndpoint={0}".format(l1_config_env_vars["CL_RPC_URL"]),
+        # "--CL.L1EthApiEndpoint={0}".format(l1_config_env_vars["L1_RPC_URL"]),
     ]
 
     # configure files
@@ -195,27 +193,30 @@ def get_config(
             size=int(participant.el_volume_size)
             if int(participant.el_volume_size) > 0
             else constants.VOLUME_SIZE[launcher.network][
-                constants.EL_TYPE.op_reth + "_volume_size"
+                constants.EL_TYPE.op_nethermind + "_volume_size"
             ],
         )
-
     # configure environment variables
 
-    env_vars = participant.el_extra_env_vars
+    env_vars = dict(participant.el_extra_env_vars)
 
     # apply customizations
 
     if observability_helper.enabled:
-        cmd.append("--metrics=0.0.0.0:{0}".format(observability.METRICS_PORT_NUM))
+        cmd += [
+            "--Metrics.Enabled=true",
+            "--Metrics.ExposeHost=0.0.0.0",
+            "--Metrics.ExposePort={0}".format(observability.METRICS_PORT_NUM),
+        ]
 
         observability.expose_metrics_port(ports)
 
     if not sequencer_enabled:
-        cmd.append("--rollup.sequencer-http={0}".format(sequencer_context.rpc_http_url))
+        cmd.append("--Optimism.SequencerUrl={0}".format(sequencer_context.rpc_http_url))
 
     if len(existing_el_clients) > 0:
         cmd.append(
-            "--bootnodes="
+            "--Discovery.Bootnodes="
             + ",".join(
                 [
                     ctx.enode
@@ -225,6 +226,16 @@ def get_config(
                 ]
             )
         )
+
+    # TODO: Adding the chainspec and config separately as we may want to have support for public networks and shadowforks
+    cmd.append("--config=none.cfg")
+    cmd.append(
+        "--Init.ChainSpecPath="
+        + "{0}/chainspec-{1}.json".format(
+            ethereum_package_constants.GENESIS_CONFIG_MOUNT_PATH_ON_CONTAINER,
+            launcher.network_id,
+        ),
+    )
 
     cmd += participant.el_extra_params
 
@@ -236,7 +247,7 @@ def get_config(
         "private_ip_address_placeholder": ethereum_package_constants.PRIVATE_IP_ADDRESS_PLACEHOLDER,
         "env_vars": env_vars,
         "labels": ethereum_package_shared_utils.label_maker(
-            client=constants.EL_TYPE.op_reth,
+            client=constants.EL_TYPE.op_nethermind,
             client_type=constants.CLIENT_TYPES.el,
             image=util.label_from_image(participant.el_image),
             connected_client=cl_client_name,
@@ -260,7 +271,7 @@ def get_config(
     return ServiceConfig(**config_args)
 
 
-def new_op_reth_launcher(
+def new_nethermind_launcher(
     deployment_output,
     jwt_file,
     network,
