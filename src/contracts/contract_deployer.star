@@ -269,7 +269,10 @@ def deploy_contracts(
                 "/network-data": op_deployer_output.files_artifacts[0],
                 "/fund-script": fund_script_artifact,
             },
-            run='jq --from-file /fund-script/gen2spec.jq < "/network-data/genesis-$CHAIN_ID.json" > "/network-data/chainspec-$CHAIN_ID.json"',
+            run='python3 /fund-script/nethermind-chainspec.py --network {0} --chain {1}'.format(
+                chain.network_params.network,
+                chain.network_params.network_id,
+            )
         )
 
     return op_deployer_output.files_artifacts[0]
