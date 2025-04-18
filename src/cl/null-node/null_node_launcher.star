@@ -52,7 +52,7 @@ def launch(
     __interop_params, # ignored
     __da_server_context, # ignored
 ):
-    cmd = ["dotnet", "Nethermind.Consensus.NullClient.dll"]
+    cmd = ["./Nethermind.Consensus.NullClient"]
 
     # configure files
     files = {
