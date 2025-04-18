@@ -40,17 +40,17 @@ def launch(
     launcher,
     service_name,
     participant,
-    __global_log_level, # ignored
-    __persistent, # ignored
+    __global_log_level,  # ignored
+    __persistent,  # ignored
     tolerations,
     node_selectors,
     el_context,
-    __existing_cl_clients, # ignored
-    __l1_config_env_vars, # ignored
-    __sequencer_enabled, # ignored
-    __servability_helper, # ignored
-    __interop_params, # ignored
-    __da_server_context, # ignored
+    __existing_cl_clients,  # ignored
+    __l1_config_env_vars,  # ignored
+    __sequencer_enabled,  # ignored
+    __servability_helper,  # ignored
+    __interop_params,  # ignored
+    __da_server_context,  # ignored
 ):
     cmd = ["./Nethermind.Consensus.NullClient"]
 
