@@ -85,7 +85,6 @@ def to_nethermind_chainspec(l1, genesis, rollup, state):
                     "MaxSequencerDrift": lookup(rollup, ["max_sequencer_drift"]),
                     "SystemTransactionSender": "0xDeaDDEaDDeAdDeAdDEAdDEaddeAddEAdDEAd0001",
                     "SystemTransactionTo": "0x4200000000000000000000000000000000000015",
-                    # TODO: Get nodes as arguments
                     "Nodes": [],
                 },
                 # Roles
@@ -197,7 +196,7 @@ def to_nethermind_chainspec(l1, genesis, rollup, state):
                 "stateRoot": lookup(rollup, ["genesis", "l2", "hash"]),
             }
         ),
-        "nodes": [],  # TODO: Nodes
+        "nodes": [],
         "accounts": to_nethermind_accounts(genesis),
     }
     return nethermind
@@ -227,7 +226,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Nethermind Optimism Kurtosis compatibility layer")
     parser.add_argument("-n", "--network", default="mainnet", help="network name")
     parser.add_argument("-c", "--chain", default="2151908", help="chain id")
-    parser.add_argument("-o", "--output", default=f"{ROOT}/GEN_chainspec-2151908.json", help="output file for the generated chainspec")
+    parser.add_argument("-o", "--output", default=f"{ROOT}/chainspec-2151908.json", help="output file for the generated chainspec")
     args = parser.parse_args()
+
+    with open(f"{ROOT}/script-args.json", "w") as f:
+        json.dump(args.__dict__, f, indent=2)
 
     main(args.network, args.chain, args.output)
