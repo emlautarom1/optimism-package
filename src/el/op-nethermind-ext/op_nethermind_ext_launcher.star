@@ -91,6 +91,7 @@ def launch(
     observability_helper,
     interop_params,
     l1_config_env_vars,
+    existing_cl_clients=[],
 ):
     log_level = ethereum_package_input_parser.get_client_log_level_or_default(
         participant.el_log_level, global_log_level, VERBOSITY_LEVELS
@@ -108,6 +109,7 @@ def launch(
         tolerations,
         node_selectors,
         existing_el_clients,
+        existing_cl_clients,
         cl_client_name,
         sequencer_enabled,
         sequencer_context,
@@ -149,6 +151,7 @@ def get_config(
     tolerations,
     node_selectors,
     existing_el_clients,
+    existing_cl_clients,
     cl_client_name,
     sequencer_enabled,
     sequencer_context,
@@ -227,6 +230,11 @@ def get_config(
                     ]
                 ]
             )
+        )
+
+    if len(existing_cl_clients) > 0:
+        cmd.append(
+            "--CL.Bootnodes=" + ",".join([ctx.multiaddr for ctx in existing_cl_clients])
         )
 
     # TODO: Adding the chainspec and config separately as we may want to have support for public networks and shadowforks

@@ -6,6 +6,8 @@ ethereum_package_input_parser = import_module(
     "github.com/ethpandaops/ethereum-package/src/package_io/input_parser.star"
 )
 
+constants = import_module("./package_io/constants.star")
+
 input_parser = import_module("./package_io/input_parser.star")
 
 observability = import_module("./observability/observability.star")
@@ -269,22 +271,27 @@ def launch(
             index_str, l2_services_suffix
         )
 
-        el_context = el_launch_method(
-            plan,
-            el_launcher,
-            el_service_name,
-            participant,
-            global_log_level,
-            persistent,
-            el_tolerations,
-            node_selectors,
-            all_el_contexts,
-            sequencer_enabled,
-            sequencer_context,
-            observability_helper,
-            interop_params,
-            l1_config_env_vars,
+        el_context = struct(
+            client_name=constants.EL_TYPE.op_nethermind_ext, el_metrics_info=[]
         )
+
+        if el_type != constants.EL_TYPE.op_nethermind_ext:
+            el_context = el_launch_method(
+                plan,
+                el_launcher,
+                el_service_name,
+                participant,
+                global_log_level,
+                persistent,
+                el_tolerations,
+                node_selectors,
+                all_el_contexts,
+                sequencer_enabled,
+                sequencer_context,
+                observability_helper,
+                interop_params,
+                l1_config_env_vars,
+            )
 
         all_el_contexts.append(el_context)
         if sequencer_enabled:
@@ -432,6 +439,30 @@ def launch(
         # only the first participant is the sequencer
         if sequencer_enabled:
             sequencer_enabled = False
+
+    for index, el in enumerate(all_el_contexts):
+        if el.client_name == constants.EL_TYPE.op_nethermind_ext:
+            all_el_contexts[index] = op_nethermind_ext.launch(
+                plan,
+                el_launcher,
+                el_service_name,
+                participant,
+                global_log_level,
+                persistent,
+                el_tolerations,
+                node_selectors,
+                [
+                    ctx
+                    for ctx in all_el_contexts
+                    if ctx.client_name != constants.EL_TYPE.op_nethermind_ext
+                ],
+                sequencer_enabled,
+                sequencer_context,
+                observability_helper,
+                interop_params,
+                l1_config_env_vars,
+                all_cl_contexts,
+            )
 
     plan.print("Successfully added {0} EL/CL participants".format(num_participants))
     return all_el_contexts, all_cl_contexts
