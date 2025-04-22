@@ -49,14 +49,7 @@ def to_nethermind_accounts(genesis):
     return result
 
 
-def to_nethermind_chainspec(l1, genesis, rollup, state):
-    constants = {
-        "L1BeaconGenesisSlotTime": {
-            "mainnet": 1606824023,
-            "sepolia": 1655733600,
-        }
-    }
-
+def to_nethermind_chainspec(l1_genesis_slot, genesis, rollup, state):
     nethermind = {
         "engine": {
             "Optimism": {
@@ -78,7 +71,7 @@ def to_nethermind_chainspec(l1, genesis, rollup, state):
             },
             "OptimismCL": merge_all(
                 {
-                    "L1BeaconGenesisSlotTime": lookup(constants, ["L1BeaconGenesisSlotTime", l1]),
+                    "L1BeaconGenesisSlotTime": l1_genesis_slot,
                     "BatcherInboxAddress": lookup(rollup, ["batch_inbox_address"]),
                     "L2BlockTime": lookup(rollup, ["block_time"]),
                     "SeqWindowSize": lookup(rollup, ["seq_window_size"]),
@@ -202,7 +195,7 @@ def to_nethermind_chainspec(l1, genesis, rollup, state):
     return nethermind
 
 
-def main(network, chain_id, output):
+def main(chain_id, l1_genesis_slot, output):
     GENESIS = f"{ROOT}/genesis-{chain_id}.json"
     ROLLUP = f"{ROOT}/rollup-{chain_id}.json"
     STATE = f"{ROOT}/state.json"
@@ -216,7 +209,7 @@ def main(network, chain_id, output):
     with open(STATE, "r") as f:
         state = json.load(f)
 
-    chainspec = to_nethermind_chainspec(network, genesis, rollup, state)
+    chainspec = to_nethermind_chainspec(l1_genesis_slot, genesis, rollup, state)
 
     with open(output, "w") as f:
         json.dump(chainspec, f, indent=2)
@@ -224,12 +217,14 @@ def main(network, chain_id, output):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Nethermind Optimism Kurtosis compatibility layer")
-    parser.add_argument("-n", "--network", default="mainnet", help="network name")
     parser.add_argument("-c", "--chain", default="2151908", help="chain id")
+    # TODO: Get this value from Kurtosis setup
+    # Currently hardcoded to "mainnet" value as default
+    parser.add_argument("-g", "--genesis-slot", default="1606824023", help="l1 beacon genesis slot time")
     parser.add_argument("-o", "--output", default=f"{ROOT}/chainspec-2151908.json", help="output file for the generated chainspec")
     args = parser.parse_args()
 
     with open(f"{ROOT}/script-args.json", "w") as f:
         json.dump(args.__dict__, f, indent=2)
 
-    main(args.network, args.chain, args.output)
+    main(args.chain, args.genesis_slot, args.output)
