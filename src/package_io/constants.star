@@ -12,6 +12,7 @@ EL_TYPE = struct(
     op_geth="op-geth",
     op_erigon="op-erigon",
     op_nethermind="op-nethermind",
+    op_nethermind_ext="op-nethermind-ext",
     op_besu="op-besu",
     op_reth="op-reth",
 )

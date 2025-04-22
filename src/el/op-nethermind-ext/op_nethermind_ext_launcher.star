@@ -90,7 +90,7 @@ def launch(
     sequencer_context,
     observability_helper,
     interop_params,
-    l1_config_env_vars
+    l1_config_env_vars,
 ):
     log_level = ethereum_package_input_parser.get_client_log_level_or_default(
         participant.el_log_level, global_log_level, VERBOSITY_LEVELS
@@ -112,7 +112,7 @@ def launch(
         sequencer_enabled,
         sequencer_context,
         observability_helper,
-        l1_config_env_vars
+        l1_config_env_vars,
     )
 
     service = plan.add_service(service_name, config)
@@ -153,7 +153,7 @@ def get_config(
     sequencer_enabled,
     sequencer_context,
     observability_helper,
-    l1_config_env_vars
+    l1_config_env_vars,
 ):
     discovery_port = DISCOVERY_PORT_NUM
     ports = dict(get_used_ports(discovery_port))
@@ -169,16 +169,18 @@ def get_config(
         "--JsonRpc.WebSocketsPort={0}".format(WS_PORT_NUM),
         "--JsonRpc.EngineHost=0.0.0.0",
         "--JsonRpc.EnginePort={0}".format(ENGINE_RPC_PORT_NUM),
-        "--Network.ExternalIp=" + ethereum_package_constants.PRIVATE_IP_ADDRESS_PLACEHOLDER,
+        "--Network.ExternalIp="
+        + ethereum_package_constants.PRIVATE_IP_ADDRESS_PLACEHOLDER,
         "--Network.DiscoveryPort={0}".format(discovery_port),
         "--Network.P2PPort={0}".format(discovery_port),
-        "--JsonRpc.JwtSecretFile=" + ethereum_package_constants.JWT_MOUNT_PATH_ON_CONTAINER,
+        "--JsonRpc.JwtSecretFile="
+        + ethereum_package_constants.JWT_MOUNT_PATH_ON_CONTAINER,
         # CL Configs
-        # "--CL.Enabled=true",
-        # "--CL.P2PHost=0.0.0.0",
-        # "--CL.P2PPort={0}".format(BEACON_DISCOVERY_PORT_NUM),
-        # "--CL.L1BeaconApiEndpoint={0}".format(l1_config_env_vars["CL_RPC_URL"]),
-        # "--CL.L1EthApiEndpoint={0}".format(l1_config_env_vars["L1_RPC_URL"]),
+        "--CL.Enabled=true",
+        "--CL.P2PHost=0.0.0.0",
+        "--CL.P2PPort={0}".format(BEACON_DISCOVERY_PORT_NUM),
+        "--CL.L1BeaconApiEndpoint={0}".format(l1_config_env_vars["CL_RPC_URL"]),
+        "--CL.L1EthApiEndpoint={0}".format(l1_config_env_vars["L1_RPC_URL"]),
     ]
 
     # configure files
@@ -193,7 +195,7 @@ def get_config(
             size=int(participant.el_volume_size)
             if int(participant.el_volume_size) > 0
             else constants.VOLUME_SIZE[launcher.network][
-                constants.EL_TYPE.op_nethermind + "_volume_size"
+                constants.EL_TYPE.op_nethermind_ext + "_volume_size"
             ],
         )
     # configure environment variables
@@ -247,7 +249,7 @@ def get_config(
         "private_ip_address_placeholder": ethereum_package_constants.PRIVATE_IP_ADDRESS_PLACEHOLDER,
         "env_vars": env_vars,
         "labels": ethereum_package_shared_utils.label_maker(
-            client=constants.EL_TYPE.op_nethermind,
+            client=constants.EL_TYPE.op_nethermind_ext,
             client_type=constants.CLIENT_TYPES.el,
             image=util.label_from_image(participant.el_image),
             connected_client=cl_client_name,
