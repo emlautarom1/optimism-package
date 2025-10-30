@@ -1,0 +1,38 @@
+optimism_package:
+  chains:
+    chain0:
+      participants:
+        node0:
+          el:
+            type: op-geth
+            image: "us-docker.pkg.dev/oplabs-tools-artifacts/images/op-geth:v1.101603.3-rc.3"
+          cl:
+            type: op-node
+        node1:
+          el:
+            type: op-nethermind
+            image: nethermind/nethermind:1.35.0
+          cl:
+            type: op-node
+      network_params:
+        fjord_time_offset: 0
+        granite_time_offset: 0
+        holocene_time_offset: 0
+        isthmus_time_offset: 0
+ethereum_package:
+  participants:
+    - el_type: geth
+      cl_type: lighthouse
+      cl_image: ethpandaops/lighthouse:stable
+  network_params:
+    preset: minimal
+    genesis_delay: 5
+    additional_preloaded_contracts: '
+      {
+      "0x4e59b44847b379578588920cA78FbF26c0B4956C": {
+      "balance": "0ETH",
+      "code": "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf3",
+      "storage": {},
+      "nonce": "1"
+      }
+      }'
